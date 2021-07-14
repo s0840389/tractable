@@ -6,11 +6,13 @@ p.beta=0.99; % discount
 p.sigma=4.0;	% crra
 p.psi=2.0;	% labour elast (inverse frish)
 
-p.epsilon_p=11;	% epsilon prices
+p.epsilon_p=7;	% epsilon prices
 p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
 
 p.epsilon_w=11;	% epsilon wagws
 p.mu_w=p.epsilon_w/(p.epsilon_w-1); % wage markup
+
+p.shareE=0.2; % share of expansionary workers
 
 %% firms
 
@@ -39,6 +41,7 @@ p.tau=25; % investment adjustment costs
 p.Np=3; % average price duration
 
 p.theta=p.Np/(p.Np+1); % calvo param
+
 
 p.phi=p.theta*(p.epsilon_p-1)/((1-p.theta)*(1-p.beta*p.theta)); % price adjustment cost
 

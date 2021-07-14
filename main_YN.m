@@ -1,66 +1,64 @@
+
+
 clear all
 
 
 pars
+load('NKsstate.mat')
 
 
+sstate=NKsstate; % default to NK model steadystate
 
-%% steady state
+% targets to be the same
 
-% bisection method
-
-pkl=1/p.beta+p.delta-1-0.02;
-pkh=0.15;
-
-diff=10;
-tol1=10e-8;
-iter=0;
-
-while abs(diff)>tol1
-
-iter=iter+1;
-
-%  pk 
-
-	pk=0.5*(pkl+pkh);
-
-%  inflation
-
-   sstate.pit=p.pitstar;
-   
-%  interest rate
-
-   sstate.int=p.intstar; %(16)
+    % 1) Labour share
+    % 2) Capital ouput ratio
+    % 3) Prices and interest rates
+    % 4) frictions
     
-%  marginal cost
-
-	sstate.mc=log(1/(p.mu_p-(sstate.pit-p.beta*sstate.pit)/p.kappa_p));
     
-%  Production labour
-
-	sstate.N=1;
-
-%  technology
-
-	sstate.zy=0;
+ % matching labour share and ratios using wage foc's and ls equation
     
-%  capital
+ lyle_ratio=p.shareE/(1-p.shareE);
 
-	sstate.K=log((pk/(exp(sstate.mc)*p.alpha*p.thetay)*exp(sstate.N)^-((1-p.alpha)*p.thetay))^(1/(p.alpha*p.thetay-1)));
-
-   %  firm output
-
-	sstate.Y=log((exp(sstate.K)^p.alpha*exp(sstate.N)^(1-p.alpha))^p.thetay); % firm level production
-
+ mc=exp(sstate.mc);
+ 
+ scaley=1/mc*sstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
+ 
+ scalen=1/(1-mc)*sstate.sy/(1+1/lyle_ratio); % thetan*(1-alphan)
+    
+ p.thetan=scalen;
+ p.thetay=1;
+ p.alphay=1-scaley;
+ 
+ sstate.le=log(0.2); % expansionary labour
+ sstate.ly=log(0.8); % production labour
+ sstate.Mg=0; % measure of goods
+ 
+ p.zn=exp(sstate.Mg)/exp(sstate.le)^p.thetan; % expansionary technology
+ 
+ % match capital output ratio
+ 
+ sstate.ki=log((sstate.pk/(mc*p.thetay*p.alphay) * exp(sstate.ly)^(-p.thetay*(1-p.alphay)) )^(1/(p.thetay*p.alphay-1))); % firm capital
+ 
+ sstate.K=log(exp(sstate.Mg)*exp(sstate.ki)); % total capital
+ 
+ sstate.yi=log((exp(sstate.ki)^p.alphay * exp(sstate.ly)^(1-p.alphay))^p.thetay); % firm  output
+ 
+ sstate.Y=sstate.yi+sstate.Mg; % total output
+ 
+ sstate.N=log(exp(sstate.ly)*exp(sstate.Mg)+exp(sstate.le));
+ 
 %  wages
  
-	sstate.w=log(exp(sstate.mc)*p.thetay*(1-p.alpha)*exp(sstate.Y)/exp(sstate.N)); 
+	sstate.w=log(exp(sstate.mc)*p.thetay*(1-p.alphay)*exp(sstate.yi)/exp(sstate.ly)); 
          
 %  dividend
   
-    piy=exp(sstate.Y)-exp(sstate.w)*exp(sstate.N)-pk*exp(sstate.K);
+    piy=exp(sstate.Mg)*(exp(sstate.yi)*exp(sstate.mc)-exp(sstate.w)*exp(sstate.ly)-sstate.pk*exp(sstate.ki));
+    pin=exp(sstate.Mg)*(exp(sstate.yi)*(1-exp(sstate.mc)))-exp(sstate.w)*exp(sstate.le);
     
-    sstate.PId=log(piy);
+    sstate.PId=log(piy+pin);
  
 % investment    
     
@@ -70,7 +68,7 @@ iter=iter+1;
 
     sstate.qk=log(1+p.tau*(exp(sstate.Inv)/exp(sstate.K)-p.delta));
 
-	sstate.ra=(pk+exp(sstate.qk)*(1-p.delta)) / exp(sstate.qk) -1;
+	sstate.ra=(sstate.pk+exp(sstate.qk)*(1-p.delta)) / exp(sstate.qk) -1;
 
 % stock price
 
@@ -83,7 +81,7 @@ iter=iter+1;
 % deposit
 
     sstate.d=-sstate.ra*exp(sstate.a);
-    
+        
 % consumption
 
     adjcost=p.chi0*abs(sstate.d) + p.chi1*abs(sstate.d)^p.chi2*exp(sstate.a)^(1-p.chi2);
@@ -95,37 +93,16 @@ iter=iter+1;
 	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
 
     sstate.C=log(exp(sstate.Y)-exp(sstate.Inv)-exp(sstate.G));
-    
+        
  % other variables
  
     sstate.sy=exp(sstate.N)*exp(sstate.w)/(exp(sstate.Y));
  
-% difference
+    sstate.pitw=0;
 
-	diff= (1+sstate.ra) - 1/p.beta - euler2(sstate.d,p,sstate);
+YNsstate=sstate;
 
-if diff>0
-
-	pkh=pk;
-
-else
-
-	pkl=pk;
-
-end
-
-
-if iter>200
-break
-end
-
-end
-
-sstate.pk=pk;
-sstate.pitw=0;
-
-NKsstate=sstate;
-save('NKsstate.mat','NKsstate')
+save('YNsstate.mat','YNsstate')
 
 
 
@@ -134,14 +111,15 @@ save('NKsstate.mat','NKsstate')
 xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
 
 yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
-     sstate.PId; sstate.G;
+     sstate.PId; sstate.G; 
     sstate.Inv; sstate.ra; sstate.C; sstate.pk;
-    sstate.sy; sstate.qk; sstate.Y; sstate.d];
+    sstate.sy; sstate.qk; sstate.Y; sstate.d;
+    sstate.Mg; sstate.le; sstate.ly; sstate.ki; sstate.yi];
     
 p.numcontrols=size(yss,1);
 p.numstates=size(xss,1);
 
-F = @(a,b,c,d)Fsys_NK(a,b,c,d,xss,yss,p);
+F = @(a,b,c,d)Fsys_YN(a,b,c,d,xss,yss,p);
 
 [Fss,LHS,RHS]=F(xss*0,0*xss,0*yss,0*yss);
 
@@ -152,9 +130,7 @@ end
     
 p.overrideEigen=true;
 
-
-
-%% Solve RE via Schmitt-Grohe-Uribe Form
+ %% Solve RE via Schmitt-Grohe-Uribe Form
 [hx,gx,F1,F2,F3,F4,par] = SGU_solver(F,p,p);
 
 
@@ -183,7 +159,7 @@ end
 irflist=char('RB','PI','Y','I','LS','W','N','PId','ra');
 irfind=[5,8,20,14,18,6,11,12,15]';
 
-figure(101)
+figure(102)
 clf
 
 for i=1:9
@@ -199,15 +175,5 @@ end
 saveas(gcf,'IRF6.jpg')
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% other functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-  	function x = euler2(d,p,sstate)
-	
-	xd=p.chi0+p.chi2*p.chi1*abs(d)^(p.chi2-1)*exp(sstate.a)^(1-p.chi2);
-    xa=(1-p.chi2)*p.chi1*abs(d)^p.chi2*exp(sstate.a)^(-p.chi2);
-	x=xa/(1+xd);
-end
-  
+ 
+    
