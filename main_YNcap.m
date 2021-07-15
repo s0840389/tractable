@@ -4,10 +4,10 @@ clear all
 
 
 pars
-load('NKsstate.mat')
+load('NKcapsstate.mat')
 
 
-sstate=NKsstate; % default to NK model steadystate
+sstate=NKcapsstate; % default to NK model steadystate
 
 % targets to be the same
 
@@ -21,11 +21,11 @@ sstate=NKsstate; % default to NK model steadystate
     
  lyle_ratio=p.shareE/(1-p.shareE);
 
- mc=exp(NKsstate.mc);
+ mc=exp(NKcapsstate.mc);
  
- scaley=1/mc*NKsstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
+ scaley=1/mc*NKcapsstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
  
- scalen=1/(1-mc)*NKsstate.sy/(1+1/lyle_ratio); % thetan*(1-alphan)
+ scalen=1/(1-mc)*NKcapsstate.sy/(1+1/lyle_ratio); % thetan*(1-alphan)
     
  p.thetay=1;
  p.alphay=1-scaley;
@@ -99,7 +99,11 @@ sstate=NKsstate; % default to NK model steadystate
     
 	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
 
-    sstate.C=log(exp(sstate.Y)-exp(sstate.Inv)-exp(sstate.G));
+    sstate.Cw=log((exp(sstate.w)*exp(sstate.N)-exp(sstate.G))/(1-p.shrCap));
+    
+    sstate.Ccap=log(-sstate.d/p.shrCap);
+    
+    sstate.C=log((1-p.shrCap)*exp(sstate.Cw)+p.shrCap*exp(sstate.Ccap));
         
  % other variables
  
@@ -107,9 +111,9 @@ sstate=NKsstate; % default to NK model steadystate
  
     sstate.pitw=0;
 
-YNsstate=sstate;
+YNcapsstate=sstate;
 
-save('YNsstate.mat','YNsstate')
+save('YNcapsstate.mat','YNcapsstate')
 
 
 
@@ -121,12 +125,13 @@ yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
      sstate.PId; sstate.G; 
     sstate.Inv; sstate.ra; sstate.C; sstate.pk;
     sstate.sy; sstate.qk; sstate.Y; sstate.d;
-    sstate.Mg; sstate.le; sstate.ly; sstate.ki; sstate.yi];
+    sstate.Mg; sstate.le; sstate.ly; sstate.ki; sstate.yi;
+     sstate.Ccap; sstate.Cw];
     
 p.numcontrols=size(yss,1);
 p.numstates=size(xss,1);
 
-F = @(a,b,c,d)Fsys_YN(a,b,c,d,xss,yss,p);
+F = @(a,b,c,d)Fsys_YNcap(a,b,c,d,xss,yss,p);
 
 [Fss,LHS,RHS]=F(xss*0,0*xss,0*yss,0*yss);
 
@@ -163,10 +168,10 @@ for t=1:mpar.maxlag
 end
 
 
-irflist=char('RB','PI','Y','I','LS','W','N','PId','ra');
-irfind=[5,8,20,14,18,6,11,12,15]';
+irflist=char('RB','PI','Y','I','LS','W','N','PId','Ccap');
+irfind=[5,8,20,14,18,6,11,12,27]';
 
-figure(102)
+figure(104)
 clf
 
 for i=1:9

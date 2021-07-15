@@ -14,6 +14,9 @@ p.mu_w=p.epsilon_w/(p.epsilon_w-1); % wage markup
 
 p.shareE=0.2; % share of expansionary workers
 
+p.shrCap=0.1;
+p.betaCap=0.98; % discount
+
 %% firms
 
 p.alpha=1-2/3*p.mu_p;	% capital elasticity
@@ -36,7 +39,7 @@ p.gshr=0.2; % gov purchases
 
 %% frictions
 
-p.tau=25; % investment adjustment costs
+p.tau=50; % investment adjustment costs
 
 p.Np=3; % average price duration
 
@@ -47,14 +50,14 @@ p.phi=p.theta*(p.epsilon_p-1)/((1-p.theta)*(1-p.beta*p.theta)); % price adjustme
 
 p.kappa_p=(1-p.theta)*(1-p.beta*p.theta)/p.theta;
 
-p.Nw=2; % average wage duration
+p.Nw=3; % average wage duration
 
 p.thetaw=p.Nw/(p.Nw+1); % calvo wage param
 
-p.kappa_w=(1-p.thetaw)*(1-p.beta*p.thetaw)/(p.thetaw*(1+p.epsilon_w*p.psi));
+p.kappa_w=(1-p.thetaw)*(1-p.beta*p.thetaw)/p.thetaw;
 
-p.chi0=0.05;
-p.chi1=0.8;
+p.chi0=0*0.05;
+p.chi1=0*0.8;
 p.chi2=1.4;
 
 %% stocashtic parameters
