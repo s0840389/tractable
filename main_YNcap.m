@@ -12,16 +12,21 @@ sstate=NKcapsstate; % default to NK model steadystate
 % targets to be the same
 
     % 1) Labour share
-    % 2) Capital ouput ratio
+    % 2) Profit share
     % 3) Prices and interest rates
     % 4) frictions
     
-    
  % matching labour share and ratios using wage foc's and ls equation
     
+ p.epsilon_p=1/(p.profshr+p.shareE*p.labshr); % match profit share
+ 
+ p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
+
  lyle_ratio=p.shareE/(1-p.shareE);
 
- mc=exp(NKcapsstate.mc);
+ sstate.mc=log(1/(p.mu_p-(NKcapsstate.pit-p.beta*NKcapsstate.pit)/p.kappa_p));
+
+ mc=exp(sstate.mc);
  
  scaley=1/mc*NKcapsstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
  
@@ -88,29 +93,38 @@ sstate=NKcapsstate; % default to NK model steadystate
 % deposit
 
     sstate.d=-sstate.ra*exp(sstate.a);
-        
-% consumption
+       
+
+% government
+    
+    sstate.B=log(p.BY*exp(sstate.Y))*0;
+    
+    sstate.G=log((1-p.taul)*exp(sstate.w)*exp(sstate.N)-sstate.int/(1+sstate.pit)*sstate.B);
+      
+    % consumption
 
     adjcost=p.chi0*abs(sstate.d) + p.chi1*abs(sstate.d)^p.chi2*exp(sstate.a)^(1-p.chi2);
 
-% government
-
-    sstate.G=log(exp(sstate.Y)*p.gshr);
-    
 	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
 
+    sstate.C=log(exp(sstate.Y)-exp(sstate.Inv)-exp(sstate.G));
+        
+    
     sstate.Cw=log((exp(sstate.w)*exp(sstate.N)-exp(sstate.G))/(1-p.shrCap));
     
     sstate.Ccap=log(-sstate.d/p.shrCap);
     
     sstate.C=log((1-p.shrCap)*exp(sstate.Cw)+p.shrCap*exp(sstate.Ccap));
-        
+    
+    
  % other variables
  
     sstate.sy=exp(sstate.N)*exp(sstate.w)/(exp(sstate.Y));
  
     sstate.pitw=0;
 
+    sstate.taul=p.taul;
+    
 YNcapsstate=sstate;
 
 save('YNcapsstate.mat','YNcapsstate')
@@ -119,14 +133,14 @@ save('YNcapsstate.mat','YNcapsstate')
 
 %% dynamics (SGU Form)
 
-xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.taul ;sstate.Inv; 0];
 
 yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
      sstate.PId; sstate.G; 
     sstate.Inv; sstate.ra; sstate.C; sstate.pk;
     sstate.sy; sstate.qk; sstate.Y; sstate.d;
-    sstate.Mg; sstate.le; sstate.ly; sstate.ki; sstate.yi;
-     sstate.Ccap; sstate.Cw];
+    sstate.Mg; sstate.le; sstate.ly; sstate.ki; 
+    sstate.yi;sstate.Ccap; sstate.Cw];
     
 p.numcontrols=size(yss,1);
 p.numstates=size(xss,1);
@@ -168,8 +182,8 @@ for t=1:mpar.maxlag
 end
 
 
-irflist=char('RB','PI','Y','I','LS','W','N','PId','Ccap');
-irfind=[5,8,20,14,18,6,11,12,27]';
+irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
+irfind=[5,p.numstates+1,p.numstates+13,p.numstates+7,p.numstates+11,6,p.numstates+4,p.numstates+5,p.numstates+9]';
 
 figure(104)
 clf
@@ -178,11 +192,11 @@ for i=1:9
     
 subplot(3,3,i)
 
-plot(IRF_state_sparse(irfind(i),:))
+plot(IRF_state_sparse(irfind(i),:),'LineWidth',1.5)
 eval(sprintf('title("%s")',irflist(i,:)))
 hline=refline(0,0);
 hline.Color='black';
-xlim([0,24])
+xlim([0,mpar.maxlag])
 end
 saveas(gcf,'IRF6.jpg')
 

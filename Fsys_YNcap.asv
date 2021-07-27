@@ -22,7 +22,7 @@ function [Difference,LHS,RHS]  = Fsys(x,xminus,y,yminus,xss,yss,p)
 
 
 for i=1:p.numcontrols
-    eval(sprintf('%sminus = yminus(%f);',strtrim(controls(i,:)),i))
+    eval(sprintf('%sminus = yminus(%f)',strtrim(controls(i,:)),i))
 end
 
 % controls t+1
@@ -74,8 +74,8 @@ RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
  % (2) Euler Capital
  
 
- LHS(2)=Ccap^0;
- RHS(2)=p.betaCap*(1+ra)*C^-0;
+ LHS(2)=(1+chid)*Ccap^0;
+ RHS(2)=p.beta*((1+ra)*(1+chidprime)-chiaprime)*C^-0;
  
  % (3) Wages / Labour supply
  
@@ -166,7 +166,7 @@ RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
 % (18) Government spending
 
 LHS(18)=Gminus;
-RHS(18)=(1-taul)*Nminus*W;
+RHS(18)=Gss;
  
 % (19) resource constraint
  
@@ -209,33 +209,31 @@ RHS(18)=(1-taul)*Nminus*W;
  LHS(25)=Nminus;
  RHS(25)=leminus+lyminus*Mgminus;
 
+ % (26) Debt
+
+%RHS(22)=(B/Bminus);
+%LHS(22)=(Bminus/Bss)^(-p.gamma_B)*((1+pitminus)/(1+p.pitstar))^p.gamma_pi*(Yminus/Yss)^p.gamma_Y;
+
+taxrevenue=W*Nminus*(1-taul);
+
+    LHS(26)       = (Gminus);
+    RHS(26) =  B - Bminus*(1+intminus)/(1+pitminus) + taxrevenue;
 
 % (27) taxes
 
-    LHS(26)       = Gss;
+    LHS(27)       = (1-taul)/(1-p.taul);
 
-    RHS(26) = Gminus;
+    RHS(27) = ((1-taulminus)/(1-p.taul))^p.rho_tax *((Bminus/Bss)^p.gamma_taxB*(Yminus/Yss)^p.gamma_taxY)^(1-p.rho_tax) ;
 
-    % (23) total consumption
- 
- LHS(27)=Cminus;
- RHS(27)=p.shrCap*Ccapminus+(1-p.shrCap)*Cwminus;
-
-
- % (24) capatalsit consumption
- 
- LHS(28)=Ccapminus;
- RHS(28)=-dminus/p.shrCap;
- 
 % (28) Investment state
 
-    LHS(29)=Invstate;
-    RHS(29)=Invminus;
+    LHS(28)=Invstate;
+    RHS(28)=Invminus;
 
  % (29) shock
  
- RHS(30)=eint;
- LHS(30)=0*eintminus;
+ RHS(29)=eint;
+ LHS(29)=0*eintminus;
 
 %% Difference
 Difference=((LHS-RHS));

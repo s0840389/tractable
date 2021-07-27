@@ -38,7 +38,7 @@ iter=iter+1;
     
 %  Production labour
 
-	sstate.N=1;
+	sstate.N=log(1);
 
 %  technology
 
@@ -84,16 +84,15 @@ iter=iter+1;
 
     sstate.d=-sstate.ra*exp(sstate.a);
     
-% consumption
-
-    adjcost=p.chi0*abs(sstate.d) + p.chi1*abs(sstate.d)^p.chi2*exp(sstate.a)^(1-p.chi2);
-
 % government
-
-    sstate.G=log(exp(sstate.Y)*p.gshr);
     
-	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
+    sstate.B=0;
+    
+    sstate.G=log((1-p.taul)*exp(sstate.w)*exp(sstate.N)-sstate.int/(1+sstate.pit)*sstate.B);
+  
+    % consumption
 
+    
     sstate.Cw=log((exp(sstate.w)*exp(sstate.N)-exp(sstate.G))/(1-p.shrCap));
     
     sstate.Ccap=log(-sstate.d/p.shrCap);
@@ -104,6 +103,7 @@ iter=iter+1;
  
     sstate.sy=exp(sstate.N)*exp(sstate.w)/(exp(sstate.Y));
  
+    sstate.Invstate=sstate.Inv;
 % difference
 
 	diff= (1+sstate.ra) - 1/p.betaCap - euler2(sstate.d,p,sstate);
@@ -127,6 +127,7 @@ end
 
 sstate.pk=pk;
 sstate.pitw=0;
+sstate.taul=p.taul;
 
 NKcapsstate=sstate;
 save('NKcapsstate.mat','NKcapsstate')
@@ -135,7 +136,7 @@ save('NKcapsstate.mat','NKcapsstate')
 
 %% dynamics (SGU Form)
 
-xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.Invstate;  p.taul; 0];
 
 yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
      sstate.PId; sstate.G;
@@ -160,7 +161,7 @@ p.overrideEigen=true;
 
 
 %% Solve RE via Schmitt-Grohe-Uribe Form
-[hx,gx,F1,F2,F3,F4,par] = SGU_solver(F,p,p);
+[hx,gx,F1,F2,F3,F4,p] = SGU_solver(F,p,p);
 
 
 %% Produce IRFs
@@ -185,8 +186,8 @@ for t=1:mpar.maxlag
 end
 
 
-irflist=char('RB','PI','Y','I','LS','W','N','PId','Ccap');
-irfind=[5,8,20,14,18,6,11,12,22]';
+irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
+irfind=[5,p.numstates+1,p.numstates+13,p.numstates+7,p.numstates+11,6,p.numstates+4,p.numstates+5,p.numstates+9]';
 
 figure(103)
 clf
@@ -195,11 +196,11 @@ for i=1:9
     
 subplot(3,3,i)
 
-plot(IRF_state_sparse(irfind(i),:))
+plot(IRF_state_sparse(irfind(i),:),'LineWidth',1.5)
 eval(sprintf('title("%s")',irflist(i,:)))
 hline=refline(0,0);
 hline.Color='black';
-xlim([0,24])
+xlim([0,20])
 end
 saveas(gcf,'IRF6.jpg')
 

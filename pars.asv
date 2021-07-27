@@ -17,14 +17,14 @@ p.betaCap=0.98; % discount
 
 %% firms
 
-p.labshr=0.62;
-p.profshr=0.05;
+p.labshr=2/3;
+p.profshr=0.025;
 
 
 p.epsilon_p=1/p.profshr;	% epsilon prices
 p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
 
-p.alpha=1-p.labshr*p.mu_p;	% capital elasticity
+p.alpha=1-2/3*p.mu_p;	% capital elasticity
 p.delta=0.07/4;
 p.thetay=1.00;	% scale Y
 p.thetan=0.90; % scale N

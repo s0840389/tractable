@@ -1,6 +1,6 @@
 function [Difference,LHS,RHS]  = Fsys(x,xminus,y,yminus,xss,yss,p)
 
-%xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+%xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.Invstate 0];
 
 %yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
  %    sstate.PId; sstate.G;
@@ -12,14 +12,17 @@ function [Difference,LHS,RHS]  = Fsys(x,xminus,y,yminus,xss,yss,p)
   xminus=exp(xss+xminus);
   x=exp(xss+x);
  
+
+  
     controls=char('pit','pitw','mc','N','PId','G','Inv','ra','C','pk','sy','Eqk','Y','d','Ccap','Cw');
-    states=char('K','qk','q','a','int','W','eint');
-    delog=char('int','pk','ra','pit','d','sy','eint','pitw');
+    states=char('K','qk','q','a','int','W','Invstate','taul','eint');
+    delog=char('int','pk','ra','pit','d','sy','eint','pitw','taul');
 
 % controls t
 
 
 for i=1:p.numcontrols
+    
     eval(sprintf('%sminus = yminus(%f);',strtrim(controls(i,:)),i))
 end
 
@@ -54,6 +57,9 @@ end
     Nss=exp(yss(4));
     Gss=exp(yss(6));
     Css=exp(yss(9));
+    Yss=exp(yss(13));
+    Bss=exp(xss(9));
+    
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Equations
@@ -68,13 +74,6 @@ LHS(1)=Cwminus^-p.sigma;
 RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
 
  % (2) Euler Capital
- 
-     %Adjustment frictions
-     chid=p.chi0+p.chi2*p.chi1*abs(dminus)^(p.chi2-1)*aminus^(1-p.chi2);
-    chidprime=p.chi0+p.chi2*p.chi1*abs(d)^(p.chi2-1)*a^(1-p.chi2);
-     chiaprime=(1-p.chi2)*p.chi1*abs(d)^p.chi2*exp(a)^(-p.chi2);
-     chi=p.chi0*abs(dminus) + p.chi1*abs(dminus)^p.chi2*aminus^(1-p.chi2);
- 
 
  LHS(2)=Ccapminus^(-0);
  RHS(2)=p.betaCap*(1+ra)*Ccap^(-0);
@@ -122,8 +121,8 @@ RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
 % (9) capital price
 
  LHS(9)=qk;
- RHS(9)=1+p.tau*(Invminus/Kminus-p.delta);
- 
+% RHS(9)=1+p.tau*(Invminus/Kminus-p.delta);
+ RHS(9)=1+p.tau*log(Invminus/Invstateminus)+p.tau/2*log(Invminus/Invstateminus)^2- p.tau/(1+ra)*Inv/Invminus*log(Inv/Invminus);
 % (10) expected capital price
  
  LHS(10)=Eqkminus;
@@ -132,13 +131,14 @@ RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
 % (11) expected capital price
  
  LHS(11)=Eqkminus;
- RHS(11)=(1/(1+ra))*(pk-p.tau/2*(Inv/K-p.delta)^2+p.tau*(Inv/K-p.delta)*Inv/K+(1-p.delta)*Eqk);
- 
+ %RHS(11)=(1/(1+ra))*(pk-p.tau/2*(Inv/K-p.delta)^2+p.tau*(Inv/K-p.delta)*Inv/K+(1-p.delta)*Eqk);
+  RHS(11)=1/(1+ra)*(pk+(1-p.delta)*Eqk);
  % (12) capital lom
  
  LHS(12)=K;
- RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus;
- 
+% RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus;
+  RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*log(Invminus/Invstateminus)^2*Invminus;
+
 % (13) fund value
 
  LHS(13)=a;
@@ -159,21 +159,22 @@ RHS(1)=p.beta*(1+int)/(1+pit)*Cw^-p.sigma;
 LHS(16)=Gminus;
 RHS(16)=Gss;
  
+
 % (17) resource constraint
  
  LHS(17)=Yminus;
- RHS(17)=Cminus + Gminus + Invminus + p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus+0*chi;
+ RHS(17)=Cminus + Gminus + Invminus + p.tau/2*Invminus*log(Invminus/Invstateminus)^2;
  
 % (18) Interest rate
 
  LHS(18)=int;
- RHS(18)=p.rhoint*intminus+ (1-p.rhoint)*(p.phipi*(pitminus-p.pitstar)+p.intstar) + eintminus;
+ RHS(18)=p.rhoint*intminus+ (1-p.rhoint)*(p.phipi*(pitminus-p.pitstar) - p.phiy*log(Yminus/Yss)+ p.intstar) + eintminus;
  
 % (19) wage inflation
 
 
     LHS(19)=pitw;
-    RHS(19)=log(W/Wminus);
+    RHS(19)=log(W/Wminus)+pitminus;
 
     if p.Nw==0
        LHS(19)=pitwminus;
@@ -184,22 +185,33 @@ RHS(16)=Gss;
  
  LHS(20)=syminus;
  RHS(20)=W*Nminus/Yminus;
+
+ % (21) Investment state variable
+ LHS(21)=Invstate;
+ RHS(21)=Invminus;
  
- % (21) total consumption
- 
- LHS(21)=Cminus;
- RHS(21)=p.shrCap*Ccapminus+(1-p.shrCap)*Cwminus;
+
+ % (22) Debt
+
+LHS(22)       = (Gminus);
+RHS(22) =   W*Nminus*(1-taul);
 
 
- % (22) capatalsit consumption
+% (23) total consumption
  
- LHS(22)=Ccapminus;
- RHS(22)=-dminus/p.shrCap;
+ LHS(23)=Cminus;
+ RHS(23)=p.shrCap*Ccapminus+(1-p.shrCap)*Cwminus;
 
- % (23 shock)
+
+ % (24) capatalsit consumption
  
- RHS(23)=eint;
- LHS(23)=0*eintminus;
+ LHS(24)=Ccapminus;
+ RHS(24)=-dminus/p.shrCap;
+ 
+ % (25 shock)
+ 
+ RHS(25)=eint;
+ LHS(25)=0*eintminus;
 
 %% Difference
 Difference=((LHS-RHS));
