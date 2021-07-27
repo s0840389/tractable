@@ -6,8 +6,6 @@ p.beta=0.99; % discount
 p.sigma=4.0;	% crra
 p.psi=2.0;	% labour elast (inverse frish)
 
-p.epsilon_p=7;	% epsilon prices
-p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
 
 p.epsilon_w=11;	% epsilon wagws
 p.mu_w=p.epsilon_w/(p.epsilon_w-1); % wage markup
@@ -19,6 +17,13 @@ p.betaCap=0.98; % discount
 
 %% firms
 
+p.labshr=2/3;
+p.profshr=0.05;
+
+
+p.epsilon_p=1/p.profshr;	% epsilon prices
+p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
+
 p.alpha=1-2/3*p.mu_p;	% capital elasticity
 p.delta=0.07/4;
 p.thetay=1.00;	% scale Y
@@ -26,7 +31,9 @@ p.thetan=0.90; % scale N
 
 %% government
 
-p.phipi=1.5; % taylor rule
+p.phipi=1.8; % taylor rule
+
+p.phiy=0.1;
 
 p.rhoint=0.8; % smoothing
 
@@ -34,12 +41,27 @@ p.pitstar=0.00/4; % inflation target
 
 p.intstar=(1/p.beta)*(1+p.pitstar)-1; % r*
 
-p.gshr=0.2; % gov purchases
+
+% Tax Schedule
+
+p.taul=1-0.3;
+
+p.BY=1.0; %debt to gdp
+
+% tax rules
+p.rho_tax=0.55; %autocorrelation
+p.gamma_taxB=0.777; %debt
+p.gamma_taxY=2.646; %output
+
+% Debt rule
+p.gamma_pi    = -1.13;   % Reaction to inflation
+p.gamma_Y     =-0.716; % Reaction to tax revenue
+p.gamma_B       = 0.14;  % Autocorrelation
 
 
 %% frictions
 
-p.tau=50; % investment adjustment costs
+p.tau=3.54; % investment adjustment costs
 
 p.Np=3; % average price duration
 
@@ -53,6 +75,8 @@ p.kappa_p=(1-p.theta)*(1-p.beta*p.theta)/p.theta;
 p.Nw=3; % average wage duration
 
 p.thetaw=p.Nw/(p.Nw+1); % calvo wage param
+
+p.phiw=p.thetaw*(p.epsilon_w-1)*p.taul/((1-p.thetaw)*(1-p.beta*p.thetaw)); % wage adjustmetn cost
 
 p.kappa_w=(1-p.thetaw)*(1-p.beta*p.thetaw)/p.thetaw;
 

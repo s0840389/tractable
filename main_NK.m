@@ -38,7 +38,7 @@ iter=iter+1;
     
 %  Production labour
 
-	sstate.N=1;
+	sstate.N=log(1);
 
 %  technology
 
@@ -84,14 +84,16 @@ iter=iter+1;
 
     sstate.d=-sstate.ra*exp(sstate.a);
     
-% consumption
+% government
+    
+    sstate.B=log(p.BY*exp(sstate.Y));
+    
+    sstate.G=log((1-p.taul)*exp(sstate.w)*exp(sstate.N)-sstate.int/(1+sstate.pit)*exp(sstate.B));
+  
+    % consumption
 
     adjcost=p.chi0*abs(sstate.d) + p.chi1*abs(sstate.d)^p.chi2*exp(sstate.a)^(1-p.chi2);
 
-% government
-
-    sstate.G=log(exp(sstate.Y)*p.gshr);
-    
 	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
 
     sstate.C=log(exp(sstate.Y)-exp(sstate.Inv)-exp(sstate.G));
@@ -100,6 +102,7 @@ iter=iter+1;
  
     sstate.sy=exp(sstate.N)*exp(sstate.w)/(exp(sstate.Y));
  
+    sstate.Invstate=sstate.Inv;
 % difference
 
 	diff= (1+sstate.ra) - 1/p.beta - euler2(sstate.d,p,sstate);
@@ -123,6 +126,7 @@ end
 
 sstate.pk=pk;
 sstate.pitw=0;
+sstate.taul=p.taul;
 
 NKsstate=sstate;
 save('NKsstate.mat','NKsstate')
@@ -131,7 +135,7 @@ save('NKsstate.mat','NKsstate')
 
 %% dynamics (SGU Form)
 
-xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.Invstate;  p.taul; sstate.B; 0];
 
 yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
      sstate.PId; sstate.G;
@@ -155,7 +159,7 @@ p.overrideEigen=true;
 
 
 %% Solve RE via Schmitt-Grohe-Uribe Form
-[hx,gx,F1,F2,F3,F4,par] = SGU_solver(F,p,p);
+[hx,gx,F1,F2,F3,F4,p] = SGU_solver(F,p,p);
 
 
 %% Produce IRFs
@@ -180,8 +184,8 @@ for t=1:mpar.maxlag
 end
 
 
-irflist=char('RB','PI','Y','I','LS','W','N','PId','ra');
-irfind=[5,8,20,14,18,6,11,12,15]';
+irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
+irfind=[5,11,23,17,21,6,14,4,11]';
 
 figure(101)
 clf
@@ -190,11 +194,11 @@ for i=1:9
     
 subplot(3,3,i)
 
-plot(IRF_state_sparse(irfind(i),:))
+plot(IRF_state_sparse(irfind(i),:),'LineWidth',1.5)
 eval(sprintf('title("%s")',irflist(i,:)))
 hline=refline(0,0);
 hline.Color='black';
-xlim([0,24])
+xlim([0,20])
 end
 saveas(gcf,'IRF6.jpg')
 

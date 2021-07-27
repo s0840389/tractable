@@ -12,16 +12,21 @@ sstate=NKsstate; % default to NK model steadystate
 % targets to be the same
 
     % 1) Labour share
-    % 2) Capital ouput ratio
+    % 2) Profit share
     % 3) Prices and interest rates
     % 4) frictions
     
-    
  % matching labour share and ratios using wage foc's and ls equation
     
+ p.epsilon_p=1/(p.profshr+p.shareE*p.labshr); % match profit share
+ 
+ p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
+
  lyle_ratio=p.shareE/(1-p.shareE);
 
- mc=exp(NKsstate.mc);
+ sstate.mc=log(1/(p.mu_p-(NKsstate.pit-p.beta*NKsstate.pit)/p.kappa_p));
+
+ mc=exp(sstate.mc);
  
  scaley=1/mc*NKsstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
  
@@ -88,15 +93,18 @@ sstate=NKsstate; % default to NK model steadystate
 % deposit
 
     sstate.d=-sstate.ra*exp(sstate.a);
-        
-% consumption
+       
+
+% government
+    
+    sstate.B=log(p.BY*exp(sstate.Y));
+    
+    sstate.G=log((1-p.taul)*exp(sstate.w)*exp(sstate.N)-sstate.int/(1+sstate.pit)*exp(sstate.B));
+      
+    % consumption
 
     adjcost=p.chi0*abs(sstate.d) + p.chi1*abs(sstate.d)^p.chi2*exp(sstate.a)^(1-p.chi2);
 
-% government
-
-    sstate.G=log(exp(sstate.Y)*p.gshr);
-    
 	%sstate.C=log(exp(sstate.w)*exp(sstate.N)-sstate.d-adjcost);
 
     sstate.C=log(exp(sstate.Y)-exp(sstate.Inv)-exp(sstate.G));
@@ -107,6 +115,8 @@ sstate=NKsstate; % default to NK model steadystate
  
     sstate.pitw=0;
 
+    sstate.taul=p.taul;
+    
 YNsstate=sstate;
 
 save('YNsstate.mat','YNsstate')
@@ -115,7 +125,7 @@ save('YNsstate.mat','YNsstate')
 
 %% dynamics (SGU Form)
 
-xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.taul;sstate.B ;sstate.Inv; 0];
 
 yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
      sstate.PId; sstate.G; 
@@ -163,8 +173,8 @@ for t=1:mpar.maxlag
 end
 
 
-irflist=char('RB','PI','Y','I','LS','W','N','PId','ra');
-irfind=[5,8,20,14,18,6,11,12,15]';
+irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
+irfind=[5,p.numstates+1,p.numstates+13,p.numstates+7,p.numstates+11,6,p.numstates+4,p.numstates+5,p.numstates+9]';
 
 figure(102)
 clf
@@ -177,7 +187,7 @@ plot(IRF_state_sparse(irfind(i),:))
 eval(sprintf('title("%s")',irflist(i,:)))
 hline=refline(0,0);
 hline.Color='black';
-xlim([0,24])
+xlim([0,mpar.maxlag])
 end
 saveas(gcf,'IRF6.jpg')
 

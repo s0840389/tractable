@@ -1,6 +1,6 @@
 function [Difference,LHS,RHS]  = Fsys(x,xminus,y,yminus,xss,yss,p)
 
-%xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; 0];
+%xss=[sstate.K; sstate.qk; sstate.q; sstate.a; sstate.int; sstate.w; sstate.Invstate 0];
 
 %yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
  %    sstate.PId; sstate.G;
@@ -13,8 +13,8 @@ function [Difference,LHS,RHS]  = Fsys(x,xminus,y,yminus,xss,yss,p)
   x=exp(xss+x);
  
     controls=char('pit','pitw','mc','N','PId','G','Inv','ra','C','pk','sy','Eqk','Y','d');
-    states=char('K','qk','q','a','int','W','eint');
-    delog=char('int','pk','ra','pit','d','sy','eint','pitw');
+    states=char('K','qk','q','a','int','W','Invstate','taul','B','eint');
+    delog=char('int','pk','ra','pit','d','sy','eint','pitw','taul');
 
 % controls t
 
@@ -54,6 +54,9 @@ end
     Nss=exp(yss(4));
     Gss=exp(yss(6));
     Css=exp(yss(9));
+    Yss=exp(yss(13));
+    Bss=exp(xss(9));
+    
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Equations
@@ -122,8 +125,8 @@ RHS(1)=p.beta*(1+int)/(1+pit)*C^-p.sigma;
 % (9) capital price
 
  LHS(9)=qk;
- RHS(9)=1+p.tau*(Invminus/Kminus-p.delta);
- 
+% RHS(9)=1+p.tau*(Invminus/Kminus-p.delta);
+ RHS(9)=1+p.tau*log(Invminus/Invstateminus)+p.tau/2*log(Invminus/Invstateminus)^2- p.tau/(1+ra)*Inv/Invminus*log(Inv/Invminus);
 % (10) expected capital price
  
  LHS(10)=Eqkminus;
@@ -132,13 +135,14 @@ RHS(1)=p.beta*(1+int)/(1+pit)*C^-p.sigma;
 % (11) expected capital price
  
  LHS(11)=Eqkminus;
- RHS(11)=(1/(1+ra))*(pk-p.tau/2*(Inv/K-p.delta)^2+p.tau*(Inv/K-p.delta)*Inv/K+(1-p.delta)*Eqk);
- 
+ %RHS(11)=(1/(1+ra))*(pk-p.tau/2*(Inv/K-p.delta)^2+p.tau*(Inv/K-p.delta)*Inv/K+(1-p.delta)*Eqk);
+  RHS(11)=1/(1+ra)*(pk+(1-p.delta)*Eqk);
  % (12) capital lom
  
  LHS(12)=K;
- RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus;
- 
+% RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus;
+  RHS(12)=(1-p.delta)*Kminus+Invminus-p.tau/2*log(Invminus/Invstateminus)^2*Invminus;
+
 % (13) fund value
 
  LHS(13)=a;
@@ -159,21 +163,22 @@ RHS(1)=p.beta*(1+int)/(1+pit)*C^-p.sigma;
 LHS(16)=Gminus;
 RHS(16)=Gss;
  
+
 % (17) resource constraint
  
  LHS(17)=Yminus;
- RHS(17)=Cminus + Gminus + Invminus + p.tau/2*(Invminus/Kminus-p.delta)^2*Kminus+0*chi;
+ RHS(17)=Cminus + Gminus + Invminus + p.tau/2*Invminus*log(Invminus/Invstateminus)^2+0*chi;
  
 % (18) Interest rate
 
  LHS(18)=int;
- RHS(18)=p.rhoint*intminus+ (1-p.rhoint)*(p.phipi*(pitminus-p.pitstar)+p.intstar) + eintminus;
+ RHS(18)=p.rhoint*intminus+ (1-p.rhoint)*(p.phipi*(pitminus-p.pitstar) - p.phiy*log(Yminus/Yss)+ p.intstar) + eintminus;
  
 % (19) wage inflation
 
 
     LHS(19)=pitw;
-    RHS(19)=log(W/Wminus);
+    RHS(19)=log(W/Wminus)+pitminus;
 
     if p.Nw==0
        LHS(19)=pitwminus;
@@ -185,10 +190,33 @@ RHS(16)=Gss;
  LHS(20)=syminus;
  RHS(20)=W*Nminus/Yminus;
 
- % (21 shock)
+ % (21) Investment state variable
+ LHS(21)=Invstate;
+ RHS(21)=Invminus;
  
- RHS(21)=eint;
- LHS(21)=0*eintminus;
+
+ % (22) Debt
+
+%RHS(22)=(B/Bminus);
+%LHS(22)=(Bminus/Bss)^(-p.gamma_B)*((1+pitminus)/(1+p.pitstar))^p.gamma_pi*(Yminus/Yss)^p.gamma_Y;
+
+taxrevenue=W*Nminus*(1-taul);
+
+LHS(22)       = (Gminus);
+RHS(22) =  B - Bminus*(1+intminus)/(1+pitminus) + taxrevenue;
+
+
+% (23) taxes
+
+LHS(23)       = (1-taul)/(1-p.taul);
+
+RHS(23) = ((1-taulminus)/(1-p.taul))^p.rho_tax *((Bminus/Bss)^p.gamma_taxB*(Yminus/Yss)^p.gamma_taxY)^(1-p.rho_tax) ;
+
+ 
+ % (24 shock)
+ 
+ RHS(24)=eint;
+ LHS(24)=0*eintminus;
 
 %% Difference
 Difference=((LHS-RHS));

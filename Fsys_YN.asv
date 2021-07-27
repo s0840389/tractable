@@ -222,19 +222,18 @@ RHS(18)=Gss;
 
 taxrevenue=W*Nminus*(1-taul);
 
-    LHS(26)       = (Gminus);
-    RHS(26) =  B - Bminus*(1+intminus)/(1+pitminus) + taxrevenue;
+LHS(26)       = (Gminus);
+RHS(26) =  B - Bminus*(1+intminus)/(1+pitminus) + taxrevenue;
 
 % (27) taxes
 
-    LHS(27)       = (1-taul)/(1-p.taul);
+LHS(27)       = (1-taul)/(1-p.taul);
 
-    RHS(27) = ((1-taulminus)/(1-p.taul))^p.rho_tax *((Bminus/Bss)^p.gamma_taxB*(Yminus/Yss)^p.gamma_taxY)^(1-p.rho_tax) ;
+RHS(27) = ((1-taulminus)/(1-p.taul))^p.rho_tax *((Bminus/Bss)^p.gamma_taxB*(Yminus/Yss)^p.gamma_taxY)^(1-p.rho_tax) ;
 
-% (28) Investment state
-
-    LHS(28)=Invstate;
-    RHS(28)=Invminus;
+% (28) 
+LHS(28)=Invstate;
+RHS(28)=I
 
  % (29) shock
  
