@@ -2,7 +2,7 @@
 
 %% households
 
-p.beta=0.99; % discount
+p.beta=0.9938; % discount
 p.sigma=4.0;	% crra
 p.psi=2.0;	% labour elast (inverse frish)
 
@@ -44,9 +44,11 @@ p.intstar=(1/p.beta)*(1+p.pitstar)-1; % r*
 
 % Tax Schedule
 
-p.taul=1-0.3;
 
-p.BY=1.0; %debt to gdp
+p.BY=1.6; %debt to gdp
+
+p.taul=1-(0.175+p.BY*p.intstar)/p.labshr;
+
 
 % tax rules
 p.rho_tax=0.55; %autocorrelation
@@ -61,20 +63,20 @@ p.gamma_B       = 0.14;  % Autocorrelation
 
 %% frictions
 
-p.tau=3.54; % investment adjustment costs
+p.tau=2.0; % investment adjustment costs
 
-p.Np=3; % average price duration
+p.Np=4; % average price duration
 
-p.theta=p.Np/(p.Np+1); % calvo param
+p.theta=(p.Np-1)/p.Np; % calvo param
 
 
 p.phi=p.theta*(p.epsilon_p-1)/((1-p.theta)*(1-p.beta*p.theta)); % price adjustment cost
 
 p.kappa_p=(1-p.theta)*(1-p.beta*p.theta)/p.theta;
 
-p.Nw=3; % average wage duration
+p.Nw=4; % average wage duration
 
-p.thetaw=p.Nw/(p.Nw+1); % calvo wage param
+p.thetaw=(p.Nw-1)/p.Nw; % calvo wage param
 
 p.phiw=p.thetaw*(p.epsilon_w-1)*p.taul/((1-p.thetaw)*(1-p.beta*p.thetaw)); % wage adjustmetn cost
 

@@ -1,8 +1,5 @@
 
 
-clear all
-
-
 pars
 load('NKcapsstate.mat')
 
@@ -163,7 +160,7 @@ p.overrideEigen=true;
 %% Produce IRFs
 disp('Calculating IRFs.');
 
-mpar.maxlag=25; % Quarters
+mpar.maxlag=40; % Quarters
 
 x0=zeros(p.numstates,1);
 x0(end)=0.01;
@@ -185,6 +182,8 @@ end
 irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
 irfind=[5,p.numstates+1,p.numstates+13,p.numstates+7,p.numstates+11,6,p.numstates+4,p.numstates+5,p.numstates+9]';
 
+if printirf==true
+
 figure(104)
 clf
 
@@ -200,6 +199,9 @@ xlim([0,mpar.maxlag])
 end
 saveas(gcf,'IRF6.jpg')
 
+end
 
- 
+ IRF_YNcap=IRF_state_sparse;
+levelIRF_YNcap=exp(IRF_state_sparse+[xss;yss]);    
+
     

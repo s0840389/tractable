@@ -1,5 +1,3 @@
-clear all
-
 
 pars
 
@@ -165,7 +163,7 @@ p.overrideEigen=true;
 %% Produce IRFs
 disp('Calculating IRFs.');
 
-mpar.maxlag=25; % Quarters
+mpar.maxlag=40; % Quarters
 
 x0=zeros(p.numstates,1);
 x0(end)=0.01;
@@ -187,6 +185,8 @@ end
 irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
 irfind=[5,11,23,17,21,6,14,4,11]';
 
+if printirf==true
+
 figure(101)
 clf
 
@@ -202,6 +202,11 @@ xlim([0,20])
 end
 saveas(gcf,'IRF6.jpg')
 
+end
+
+
+ IRF_NK=IRF_state_sparse;
+levelIRF_NK=exp(IRF_state_sparse+[xss;yss]);    
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

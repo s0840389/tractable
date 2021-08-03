@@ -1,5 +1,8 @@
 
 
+clear all
+
+close all
 
 pars
 load('NKsstate.mat')
@@ -16,53 +19,51 @@ sstate=NKsstate; % default to NK model steadystate
     
  % matching labour share and ratios using wage foc's and ls equation
     
- p.epsilon_p=1/(p.profshr+p.shareE*p.labshr); % match profit share
+ %p.epsilon_p=1/(p.profshr+p.shareE*p.labshr); % match profit share
+ 
+ p.epsilon_p=6;
  
  p.mu_p=p.epsilon_p/(p.epsilon_p-1); % price markup
 
- lyle_ratio=p.shareE/(1-p.shareE);
+ %lyle_ratio=p.shareE/(1-p.shareE);
 
  sstate.mc=log(1/(p.mu_p-(NKsstate.pit-p.beta*NKsstate.pit)/p.kappa_p));
 
  mc=exp(sstate.mc);
  
- scaley=1/mc*NKsstate.sy/(1+lyle_ratio); % thetay*(1-alphay)
- 
- scalen=1/(1-mc)*NKsstate.sy/(1+1/lyle_ratio); % thetan*(1-alphan)
-    
+ p.thetay=1.0;
+ p.thetan=0.60;
+ p.alphay=0.33;
  p.thetay=1;
- p.alphay=1-scaley;
  
- %scalenk=(exp(NKsstate.K)/exp(NKsstate.Y)*NKsstate.pk-p.alphay*p.thetay*mc)/(1-mc);
- 
- %p.alphan=scalenk/(scalenk+scalen);
- 
- %p.thetan=scalenk/p.alphan;
- 
- p.thetan=scalen;
- 
- sstate.le=log(0.2); % expansionary labour
- sstate.ly=log(0.8); % production labour
+ sstate.le=log(0.5); % expansionary labour
+ sstate.ly=log(0.5); % production labour
  sstate.Mg=0; % measure of goods
  
- p.zn=exp(sstate.Mg)/exp(sstate.le)^p.thetan; % expansionary technology
- 
+
  % match capital output ratio
  
  sstate.ki=log((sstate.pk/(mc*p.thetay*p.alphay) * exp(sstate.ly)^(-p.thetay*(1-p.alphay)) )^(1/(p.thetay*p.alphay-1))); % firm capital
- 
- sstate.K=log(exp(sstate.Mg)*exp(sstate.ki)); % total capital
- 
+
  sstate.yi=log((exp(sstate.ki)^p.alphay * exp(sstate.ly)^(1-p.alphay))^p.thetay); % firm  output
- 
- sstate.Y=sstate.yi+sstate.Mg; % total output
- 
- sstate.N=log(exp(sstate.ly)*exp(sstate.Mg)+exp(sstate.le));
  
 %  wages
  
 	sstate.w=log(exp(sstate.mc)*p.thetay*(1-p.alphay)*exp(sstate.yi)/exp(sstate.ly)); 
          
+    
+ p.zn=exp(sstate.w)/(exp(sstate.yi)*(1-exp(sstate.mc))*p.thetan*exp(sstate.le)^(p.thetan-1));
+ 
+ sstate.Mg=log(p.zn*exp(sstate.le)^p.thetan);
+ 
+ sstate.K=log(exp(sstate.Mg)*exp(sstate.ki)); % total capital
+ 
+ 
+ sstate.Y=sstate.yi+sstate.Mg; % total output
+ 
+ sstate.N=log(exp(sstate.ly)*exp(sstate.Mg)+exp(sstate.le));
+ 
+
 %  dividend
   
     piy=exp(sstate.Mg)*(exp(sstate.yi)*exp(sstate.mc)-exp(sstate.w)*exp(sstate.ly)-sstate.pk*exp(sstate.ki));
@@ -134,7 +135,7 @@ yss=[sstate.pit; sstate.pitw; sstate.mc; sstate.N;
 p.numcontrols=size(yss,1);
 p.numstates=size(xss,1);
 
-F = @(a,b,c,d)Fsys_YN(a,b,c,d,xss,yss,p);
+F = @(a,b,c,d)Fsys_YNplay(a,b,c,d,xss,yss,p);
 
 [Fss,LHS,RHS]=F(xss*0,0*xss,0*yss,0*yss);
 
@@ -152,7 +153,7 @@ p.overrideEigen=true;
 %% Produce IRFs
 disp('Calculating IRFs.');
 
-mpar.maxlag=40; % Quarters
+mpar.maxlag=25; % Quarters
 
 x0=zeros(p.numstates,1);
 x0(end)=0.01;
@@ -174,8 +175,6 @@ end
 irflist=char('RB','PI','Y','I','LS','W','N','PId','C');
 irfind=[5,p.numstates+1,p.numstates+13,p.numstates+7,p.numstates+11,6,p.numstates+4,p.numstates+5,p.numstates+9]';
 
-if printirf==true
-
 figure(102)
 clf
 
@@ -191,8 +190,7 @@ xlim([0,mpar.maxlag])
 end
 saveas(gcf,'IRF6.jpg')
 
-end
 
-IRF_YN=IRF_state_sparse;
-levelIRF_YN=exp(IRF_state_sparse+[xss;yss]);    
+ 
+levelIRF=exp(IRF_state_sparse+[xss;yss]);    
 
